@@ -1,0 +1,54 @@
+services:
+  db:
+    image: postgres:16-alpine
+    container_name: thich24hutm-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: thich24h
+      POSTGRES_PASSWORD: thich24h_secret
+      POSTGRES_DB: thich24hutm
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    ports:
+      - "127.0.0.1:5440:5432"
+      - "[::1]:5440:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U thich24h -d thich24hutm"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
+  backend:
+    build: .
+    image: thich24hutm-be:local
+    container_name: thich24hutm-be
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      PORT: "3001"
+      DATABASE_URL: postgresql://thich24h:thich24h_secret@db:5432/thich24hutm
+      ZALO_APP_ID: ${ZALO_APP_ID:?set ZALO_APP_ID in .env}
+      ZALO_APP_SECRET: ${ZALO_APP_SECRET:?set ZALO_APP_SECRET in .env}
+      CORS_ORIGIN: ${CORS_ORIGIN:-""}
+    ports:
+      - "3001:3001"
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:3001/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 40s
+
+  tunnel:
+    image: cloudflare/cloudflared:latest
+    container_name: thich24hutm-tunnel
+    restart: unless-stopped
+    depends_on:
+      - backend
+    command: tunnel --no-autoupdate --url http://backend:3001
+
+volumes:
+  pgdata:
