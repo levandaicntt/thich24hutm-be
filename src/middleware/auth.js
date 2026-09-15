@@ -20,6 +20,7 @@ async function auth(req, res, next) {
     req.zaloProfile = profile;
     next();
   } catch (err) {
+    console.error(`[auth-fail] ${err.message}`, { code: err.code, status: err.status });
     return res
       .status(401)
       .json({ error: -1, message: err.message || "Auth failed", data: null });
