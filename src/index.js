@@ -13,6 +13,18 @@ app.use(helmet());
 app.use(cors({ origin: env.CORS_ORIGIN || true }));
 app.use(express.json());
 
+app.use((req, _res, next) => {
+  const { method, path, headers, body } = req;
+  console.log(
+    `[req] ${method} ${path}`,
+    JSON.stringify({
+      hasAuth: Boolean(headers.authorization),
+      body: body || null,
+    })
+  );
+  next();
+});
+
 const limiter = rateLimit({
   windowMs: 60 * 1000,
   max: 60,
@@ -27,7 +39,10 @@ app.use("/api/v1/miniapp", miniappRouter);
 
 app.use((err, _req, res, _next) => {
   const status = err.status || 500;
-  res.status(status).json({ error: -1, message: err.message || "Internal Server Error", data: null });
+  console.error(`[error] ${status} ${err.message}`, { stack: err.stack, code: err.code });
+  res
+    .status(status)
+    .json({ error: -1, message: err.message || "Internal Server Error", data: null });
 });
 
 app.listen(env.PORT, () => {
