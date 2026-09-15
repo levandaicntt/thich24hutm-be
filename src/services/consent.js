@@ -1,44 +1,19 @@
 const pool = require("../db/pool");
 
 async function upsertUser({ zaloUserId, phone }) {
-  const client = await pool.connect();
-  try {
-    await client.query("BEGIN");
-    let user = (
-      await client.query(
-        `SELECT * FROM zalo_users WHERE zalo_user_id = $1 FOR UPDATE`,
-        [zaloUserId]
-      )
-    ).rows[0];
-
-    if (!user) {
-      user = (
-        await client.query(
-          `INSERT INTO zalo_users (zalo_user_id, phone, phone_linked)
-           VALUES ($1, $2, $3)
-           RETURNING *`,
-          [zaloUserId, phone, Boolean(phone)]
-        )
-      ).rows[0];
-    } else if (user.phone !== phone) {
-      user = (
-        await client.query(
-          `UPDATE zalo_users
-           SET phone = $2, phone_linked = $3, updated_at = NOW()
-           WHERE zalo_user_id = $1
-           RETURNING *`,
-          [zaloUserId, phone, Boolean(phone)]
-        )
-      ).rows[0];
-    }
-    await client.query("COMMIT");
-    return user;
-  } catch (err) {
-    await client.query("ROLLBACK");
-    throw err;
-  } finally {
-    client.release();
-  }
+  const phoneLinked = phone != null ? true : null;
+  const { rows } = await pool.query(
+    `INSERT INTO zalo_users (zalo_user_id, phone, phone_linked)
+     VALUES ($1, $2, $3)
+     ON CONFLICT (zalo_user_id)
+     DO UPDATE SET
+       phone        = COALESCE(EXCLUDED.phone, zalo_users.phone),
+       phone_linked = COALESCE(EXCLUDED.phone_linked, zalo_users.phone_linked),
+       updated_at   = NOW()
+     RETURNING *`,
+    [zaloUserId, phone ?? null, phoneLinked]
+  );
+  return rows[0];
 }
 
 async function insertConsent({
@@ -49,21 +24,41 @@ async function insertConsent({
   deviceInfo,
   consentedAt,
 }) {
-  const result = await pool.query(
+  const oaFollowedValue =
+    oaFollowed === undefined || oaFollowed === null
+      ? null
+      : Boolean(oaFollowed);
+
+  const networkTypeValue =
+    networkType === undefined || networkType === null ? null : networkType;
+
+  const deviceInfoValue =
+    deviceInfo === undefined || deviceInfo === null
+      ? null
+      : JSON.stringify(deviceInfo);
+
+  const { rows } = await pool.query(
     `INSERT INTO zalo_user_consents
        (zalo_user_id, location, network_type, oa_followed, device_info, consented_at)
      VALUES ($1, $2, $3, $4, $5, $6)
+     ON CONFLICT (zalo_user_id)
+     DO UPDATE SET
+       location      = COALESCE(EXCLUDED.location, zalo_user_consents.location),
+       network_type  = COALESCE(EXCLUDED.network_type, zalo_user_consents.network_type),
+       oa_followed   = COALESCE(EXCLUDED.oa_followed, zalo_user_consents.oa_followed),
+       device_info   = COALESCE(EXCLUDED.device_info, zalo_user_consents.device_info),
+       consented_at  = EXCLUDED.consented_at
      RETURNING id`,
     [
       zaloUserId,
       location ? JSON.stringify(location) : null,
-      networkType || "unknown",
-      Boolean(oaFollowed),
-      deviceInfo ? JSON.stringify(deviceInfo) : "{}",
+      networkTypeValue,
+      oaFollowedValue,
+      deviceInfoValue,
       consentedAt,
     ]
   );
-  return result.rows[0];
+  return rows[0];
 }
 
 module.exports = { upsertUser, insertConsent };
