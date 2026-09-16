@@ -32,7 +32,8 @@ services:
       DATABASE_URL: postgresql://thich24h:thich24h_secret@db:5432/thich24hutm
       ZALO_APP_ID: ${ZALO_APP_ID:?set ZALO_APP_ID in .env}
       ZALO_APP_SECRET: ${ZALO_APP_SECRET:?set ZALO_APP_SECRET in .env}
-      CORS_ORIGIN: ${CORS_ORIGIN:-""}
+      CORS_ORIGIN: ${CORS_ORIGIN:-}
+      MAX_STORE_DISTANCE_METERS: ${MAX_STORE_DISTANCE_METERS:-50}
     ports:
       - "3001:3001"
     healthcheck:

@@ -3,7 +3,15 @@ const { Router } = require("express");
 const auth = require("../middleware/auth");
 const { ok, fail } = require("../utils/response");
 const { decodePhoneToken, decodeLocationToken } = require("../services/zalo");
-const { upsertUser, insertConsent } = require("../services/consent");
+const {
+  upsertUser,
+  insertConsent,
+  insertFirstFollowLocation,
+  persistUserMatch,
+} = require("../services/consent");
+const { matchUserBySnapshot } = require("../services/pharmacy");
+const { isValidCoordinate } = require("../utils/geo");
+const pool = require("../db/pool");
 
 const router = Router();
 
@@ -66,7 +74,36 @@ router.post("/consents", auth, async (req, res, next) => {
       deviceInfo: device_info,
       consentedAt: consented_at,
     });
+    if (oa_followed === true && location) {
+      const { latitude, longitude, accuracy } = location;
+      if (isValidCoordinate(latitude, longitude)) {
+        await insertFirstFollowLocation({
+          pool,
+          zaloUserId: req.zaloUserId,
+          latitude,
+          longitude,
+          accuracy,
+          capturedAt: consented_at,
+        });
+      }
+    }
     ok(res, { success: true });
+  } catch (err) {
+    next(err);
+  }
+});
+
+router.post("/location/match", auth, async (req, res, next) => {
+  try {
+    const data = await matchUserBySnapshot(pool, { zaloUserId: req.zaloUserId });
+    if (data.matched) {
+      await persistUserMatch({
+        pool,
+        zaloUserId: req.zaloUserId,
+        match: data,
+      });
+    }
+    return ok(res, data);
   } catch (err) {
     next(err);
   }

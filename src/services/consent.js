@@ -61,4 +61,46 @@ async function insertConsent({
   return rows[0];
 }
 
-module.exports = { upsertUser, insertConsent };
+async function insertFirstFollowLocation({
+  pool,
+  zaloUserId,
+  latitude,
+  longitude,
+  accuracy,
+  capturedAt,
+}) {
+  const { rows } = await pool.query(
+    `INSERT INTO first_follow_locations
+       (zalo_user_id, latitude, longitude, accuracy, captured_at)
+     VALUES ($1, $2, $3, $4, $5)
+     ON CONFLICT (zalo_user_id) DO NOTHING
+     RETURNING id`,
+    [zaloUserId, latitude, longitude, accuracy ?? null, capturedAt]
+  );
+  return rows[0] ?? null;
+}
+
+async function persistUserMatch({ pool, zaloUserId, match }) {
+  if (!match || match.matched !== true) {
+    return null;
+  }
+  const { rows } = await pool.query(
+    `UPDATE zalo_users
+     SET matched_pharmacy_id = $2,
+         matched_at          = NOW(),
+         match_distance_meters = $3,
+         customer_matched    = TRUE,
+         updated_at          = NOW()
+     WHERE zalo_user_id = $1
+     RETURNING *`,
+    [zaloUserId, match.pharmacy_id ?? null, match.distance_meters ?? null]
+  );
+  return rows[0] ?? null;
+}
+
+module.exports = {
+  upsertUser,
+  insertConsent,
+  insertFirstFollowLocation,
+  persistUserMatch,
+};

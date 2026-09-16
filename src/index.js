@@ -10,7 +10,14 @@ const miniappRouter = require("./routes/miniapp");
 const app = express();
 
 app.use(helmet());
-app.use(cors({ origin: env.CORS_ORIGIN || true }));
+app.use(
+  cors({
+    origin: env.CORS_ORIGIN || [
+      "https://h5.zdn.vn",
+      "zbrowser://h5.zdn.vn",
+    ],
+  })
+);
 app.use(express.json());
 
 app.use((req, _res, next) => {
