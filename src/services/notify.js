@@ -55,6 +55,9 @@ async function maybePushPhoneShared({
   if (!webhookUrl || !webhookKey) {
     return { skipped: true, reason: "notify-disabled" };
   }
+  if (!phone) {
+    return { skipped: true, reason: "phone-missing" };
+  }
   const oaUserId = await resolveOaUid({ pool, user_id_by_app });
   if (!oaUserId) {
     console.log(`[utm-push] skipped no-oa-link app=${user_id_by_app}`);
