@@ -1,17 +1,18 @@
 const pool = require("../db/pool");
 
-async function upsertUser({ zaloUserId, phone }) {
+async function upsertUser({ zaloUserId, phone, oaUserId = null }) {
   const phoneLinked = phone != null ? true : null;
   const { rows } = await pool.query(
-    `INSERT INTO zalo_users (zalo_user_id, phone, phone_linked)
-     VALUES ($1, $2, $3)
+    `INSERT INTO zalo_users (zalo_user_id, phone, phone_linked, oa_user_id)
+     VALUES ($1, $2, $3, $4)
      ON CONFLICT (zalo_user_id)
      DO UPDATE SET
        phone        = COALESCE(EXCLUDED.phone, zalo_users.phone),
        phone_linked = COALESCE(EXCLUDED.phone_linked, zalo_users.phone_linked),
+       oa_user_id   = COALESCE(zalo_users.oa_user_id, EXCLUDED.oa_user_id),
        updated_at   = NOW()
      RETURNING *`,
-    [zaloUserId, phone ?? null, phoneLinked]
+    [zaloUserId, phone ?? null, phoneLinked, oaUserId ?? null]
   );
   return rows[0];
 }

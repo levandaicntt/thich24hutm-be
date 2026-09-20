@@ -25,6 +25,8 @@ const consentsBody = z.object({
   oa_followed: z.boolean().optional(),
   device_info: z.record(z.unknown()).nullable().optional(),
   consented_at: z.string().datetime({ offset: true }),
+  user_id_by_app: z.string().nullable().optional(),
+  oa_user_id: z.string().nullable().optional(),
 });
 
 function bearer(req) {
@@ -57,15 +59,32 @@ router.post("/consents", auth, async (req, res, next) => {
     if (!parsed.success) {
       return fail(res, 400, parsed.error.issues[0]?.message || "Invalid body");
     }
-    const { location_token, network_type, oa_followed, device_info, consented_at } =
-      parsed.data;
+    const {
+      location_token,
+      network_type,
+      oa_followed,
+      device_info,
+      consented_at,
+      user_id_by_app,
+      oa_user_id,
+    } = parsed.data;
 
     let location = null;
     if (location_token) {
       location = await decodeLocationToken(bearer(req), location_token);
     }
 
-    await upsertUser({ zaloUserId: req.zaloUserId, phone: null });
+    if (user_id_by_app && user_id_by_app !== req.zaloUserId) {
+      console.warn(
+        `[consents] user_id_by_app mismatch client=${user_id_by_app} token=${req.zaloUserId}`
+      );
+    }
+
+    await upsertUser({
+      zaloUserId: req.zaloUserId,
+      phone: null,
+      oaUserId: oa_user_id || null,
+    });
     await insertConsent({
       zaloUserId: req.zaloUserId,
       location,
