@@ -1,0 +1,9 @@
+BEGIN;
+
+ALTER TABLE zalo_users
+  ADD COLUMN IF NOT EXISTS matched_pharmacy_id BIGINT NULL
+    REFERENCES pharmacy_locations(id) ON DELETE SET NULL,
+  ADD COLUMN IF NOT EXISTS matched_at TIMESTAMPTZ NULL,
+  ADD COLUMN IF NOT EXISTS match_distance_meters DOUBLE PRECISION NULL;
+
+COMMIT;

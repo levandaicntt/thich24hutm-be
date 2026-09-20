@@ -1,17 +1,18 @@
 const pool = require("../db/pool");
 
-async function upsertUser({ zaloUserId, phone }) {
+async function upsertUser({ zaloUserId, phone, oaUserId = null }) {
   const phoneLinked = phone != null ? true : null;
   const { rows } = await pool.query(
-    `INSERT INTO zalo_users (zalo_user_id, phone, phone_linked)
-     VALUES ($1, $2, $3)
+    `INSERT INTO zalo_users (zalo_user_id, phone, phone_linked, oa_user_id)
+     VALUES ($1, $2, $3, $4)
      ON CONFLICT (zalo_user_id)
      DO UPDATE SET
        phone        = COALESCE(EXCLUDED.phone, zalo_users.phone),
        phone_linked = COALESCE(EXCLUDED.phone_linked, zalo_users.phone_linked),
+       oa_user_id   = COALESCE(zalo_users.oa_user_id, EXCLUDED.oa_user_id),
        updated_at   = NOW()
      RETURNING *`,
-    [zaloUserId, phone ?? null, phoneLinked]
+    [zaloUserId, phone ?? null, phoneLinked, oaUserId ?? null]
   );
   return rows[0];
 }
@@ -61,4 +62,46 @@ async function insertConsent({
   return rows[0];
 }
 
-module.exports = { upsertUser, insertConsent };
+async function insertFirstFollowLocation({
+  pool,
+  zaloUserId,
+  latitude,
+  longitude,
+  accuracy,
+  capturedAt,
+}) {
+  const { rows } = await pool.query(
+    `INSERT INTO first_follow_locations
+       (zalo_user_id, latitude, longitude, accuracy, captured_at)
+     VALUES ($1, $2, $3, $4, $5)
+     ON CONFLICT (zalo_user_id) DO NOTHING
+     RETURNING id`,
+    [zaloUserId, latitude, longitude, accuracy ?? null, capturedAt]
+  );
+  return rows[0] ?? null;
+}
+
+async function persistUserMatch({ pool, zaloUserId, match }) {
+  if (!match || match.matched !== true) {
+    return null;
+  }
+  const { rows } = await pool.query(
+    `UPDATE zalo_users
+     SET matched_pharmacy_id = $2,
+         matched_at          = NOW(),
+         match_distance_meters = $3,
+         customer_matched    = TRUE,
+         updated_at          = NOW()
+     WHERE zalo_user_id = $1
+     RETURNING *`,
+    [zaloUserId, match.pharmacy_id ?? null, match.distance_meters ?? null]
+  );
+  return rows[0] ?? null;
+}
+
+module.exports = {
+  upsertUser,
+  insertConsent,
+  insertFirstFollowLocation,
+  persistUserMatch,
+};

@@ -22,3 +22,9 @@ Thumbs.db
 # Railway dotfiles
 .project
 .nixpacks/
+
+# TLS private material (keep ca.crt / server.crt tracked)
+certs/*.key
+certs/*.csr
+certs/*.srl
+certs/server.ext

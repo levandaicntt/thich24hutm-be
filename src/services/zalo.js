@@ -16,6 +16,30 @@ async function zaloFetch(path, headers) {
   }
 }
 
+function toNumberOrNull(value) {
+  if (value === null || value === undefined || value === "") {
+    return null;
+  }
+  const parsed = Number(value);
+  return Number.isFinite(parsed) ? parsed : null;
+}
+
+function normalizeCoordinates(data = {}) {
+  const lat = data.latitude ?? data.lat;
+  const lng = data.longitude ?? data.lng;
+  const result = { ...data };
+  result.latitude = lat === undefined ? undefined : toNumberOrNull(lat);
+  result.longitude = lng === undefined ? undefined : toNumberOrNull(lng);
+  result.accuracy = toNumberOrNull(data.accuracy);
+  if ("lat" in result) {
+    delete result.lat;
+  }
+  if ("lng" in result) {
+    delete result.lng;
+  }
+  return result;
+}
+
 function computeAppsecretProof(accessToken) {
   return crypto
     .createHmac("sha256", env.ZALO_APP_SECRET)
@@ -69,7 +93,7 @@ async function decodeLocationToken(accessToken, locationToken) {
     err.code = body.error;
     throw err;
   }
-  return body.data;
+  return normalizeCoordinates(body.data);
 }
 
-module.exports = { getZaloProfile, decodePhoneToken, decodeLocationToken };
+module.exports = { getZaloProfile, decodePhoneToken, decodeLocationToken, normalizeCoordinates };

@@ -3,7 +3,16 @@ const { Router } = require("express");
 const auth = require("../middleware/auth");
 const { ok, fail } = require("../utils/response");
 const { decodePhoneToken, decodeLocationToken } = require("../services/zalo");
-const { upsertUser, insertConsent } = require("../services/consent");
+const {
+  upsertUser,
+  insertConsent,
+  insertFirstFollowLocation,
+  persistUserMatch,
+} = require("../services/consent");
+const { maybePushPhoneShared } = require("../services/notify");
+const { matchUserBySnapshot } = require("../services/pharmacy");
+const { isValidCoordinate } = require("../utils/geo");
+const pool = require("../db/pool");
 
 const router = Router();
 
@@ -17,6 +26,8 @@ const consentsBody = z.object({
   oa_followed: z.boolean().optional(),
   device_info: z.record(z.unknown()).nullable().optional(),
   consented_at: z.string().datetime({ offset: true }),
+  user_id_by_app: z.string().nullable().optional(),
+  oa_user_id: z.string().nullable().optional(),
 });
 
 function bearer(req) {
@@ -33,6 +44,14 @@ router.post("/phone", auth, async (req, res, next) => {
     const data = await decodePhoneToken(bearer(req), phone_token);
     const phone = data?.number || null;
     const user = await upsertUser({ zaloUserId: req.zaloUserId, phone });
+    await maybePushPhoneShared({
+      pool,
+      user_id_by_app: req.zaloUserId,
+      phone,
+      occurredAt: new Date().toISOString(),
+    }).catch((err) =>
+      console.error(`[notify] phone push failed uid=${req.zaloUserId}: ${err.message}`)
+    );
     ok(res, {
       success: true,
       phone_linked: user.phone_linked,
@@ -49,15 +68,36 @@ router.post("/consents", auth, async (req, res, next) => {
     if (!parsed.success) {
       return fail(res, 400, parsed.error.issues[0]?.message || "Invalid body");
     }
-    const { location_token, network_type, oa_followed, device_info, consented_at } =
-      parsed.data;
+    const {
+      location_token,
+      network_type,
+      oa_followed,
+      device_info,
+      consented_at,
+      user_id_by_app,
+      oa_user_id,
+    } = parsed.data;
 
     let location = null;
     if (location_token) {
       location = await decodeLocationToken(bearer(req), location_token);
     }
 
-    await upsertUser({ zaloUserId: req.zaloUserId, phone: null });
+    console.log(
+      `[consents] zaloUserId=${req.zaloUserId} user_id_by_app=${user_id_by_app ?? "NULL"} oa_user_id=${oa_user_id ?? "NULL"}`
+    );
+
+    if (user_id_by_app && user_id_by_app !== req.zaloUserId) {
+      console.warn(
+        `[consents] user_id_by_app mismatch client=${user_id_by_app} token=${req.zaloUserId}`
+      );
+    }
+
+    await upsertUser({
+      zaloUserId: req.zaloUserId,
+      phone: null,
+      oaUserId: oa_user_id || null,
+    });
     await insertConsent({
       zaloUserId: req.zaloUserId,
       location,
@@ -66,7 +106,36 @@ router.post("/consents", auth, async (req, res, next) => {
       deviceInfo: device_info,
       consentedAt: consented_at,
     });
+    if (oa_followed === true && location) {
+      const { latitude, longitude, accuracy } = location;
+      if (isValidCoordinate(latitude, longitude)) {
+        await insertFirstFollowLocation({
+          pool,
+          zaloUserId: req.zaloUserId,
+          latitude,
+          longitude,
+          accuracy,
+          capturedAt: consented_at,
+        });
+      }
+    }
     ok(res, { success: true });
+  } catch (err) {
+    next(err);
+  }
+});
+
+router.post("/location/match", auth, async (req, res, next) => {
+  try {
+    const data = await matchUserBySnapshot(pool, { zaloUserId: req.zaloUserId });
+    if (data.matched) {
+      await persistUserMatch({
+        pool,
+        zaloUserId: req.zaloUserId,
+        match: data,
+      });
+    }
+    return ok(res, data);
   } catch (err) {
     next(err);
   }

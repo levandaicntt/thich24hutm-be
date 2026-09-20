@@ -32,7 +32,8 @@ services:
       DATABASE_URL: postgresql://thich24h:thich24h_secret@db:5432/thich24hutm
       ZALO_APP_ID: ${ZALO_APP_ID:?set ZALO_APP_ID in .env}
       ZALO_APP_SECRET: ${ZALO_APP_SECRET:?set ZALO_APP_SECRET in .env}
-      CORS_ORIGIN: ${CORS_ORIGIN:-""}
+      CORS_ORIGIN: ${CORS_ORIGIN:-}
+      MAX_STORE_DISTANCE_METERS: ${MAX_STORE_DISTANCE_METERS:-50}
     ports:
       - "3001:3001"
     healthcheck:
@@ -41,14 +42,35 @@ services:
       timeout: 5s
       retries: 3
       start_period: 40s
+    networks:
+      - default
+      - thich24h_edge
 
-  tunnel:
-    image: cloudflare/cloudflared:latest
-    container_name: thich24hutm-tunnel
+  proxy:
+    image: nginx:alpine
+    container_name: thich24hutm-proxy
     restart: unless-stopped
     depends_on:
       - backend
-    command: tunnel --no-autoupdate --url http://backend:3001
+    ports:
+      - "8443:443"
+    volumes:
+      - ./nginx.conf:/etc/nginx/conf.d/default.conf:ro
+      - ./certs:/certs:ro
+
+  tunnel:
+    image: ngrok/ngrok:latest
+    container_name: thich24hutm-ngrok
+    restart: unless-stopped
+    depends_on:
+      - proxy
+    environment:
+      NGROK_AUTHTOKEN: ${NGROK_AUTHTOKEN:?set NGROK_AUTHTOKEN}
+    command: http http://proxy:8080 --url=exemption-mountain-repossess.ngrok-free.dev
 
 volumes:
   pgdata:
+
+networks:
+  thich24h_edge:
+    external: true

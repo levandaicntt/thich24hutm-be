@@ -14,4 +14,6 @@ module.exports = {
   ZALO_APP_ID: required("ZALO_APP_ID"),
   ZALO_APP_SECRET: required("ZALO_APP_SECRET"),
   CORS_ORIGIN: process.env.CORS_ORIGIN || "",
+  NOTIFY_WEBHOOK_URL: process.env.NOTIFY_WEBHOOK_URL || "",
+  NOTIFY_WEBHOOK_KEY: process.env.NOTIFY_WEBHOOK_KEY || "",
 };

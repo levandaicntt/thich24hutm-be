@@ -1,0 +1,17 @@
+-- Pharmacy location seed template
+--
+-- Nguồn chi nhánh: KiotViet GET /branches
+--
+-- Mapping:
+--   branch.id         -> kiotviet_branch_id
+--   branch.branchName -> branch_name
+--   branch.address    -> address
+--   manual GPS        -> latitude / longitude (nhập thủ công, không dùng geocoding API)
+--
+-- GPS của mỗi chi nhánh được nhập thủ công. KHÔNG chèn tọa độ giả.
+-- Sau khi điền đầy đủ các chi nhánh, chạy file này thủ công (ví dụ: psql).
+
+-- INSERT INTO pharmacy_locations
+--   (kiotviet_branch_id, branch_name, address, latitude, longitude)
+-- VALUES
+--   (<branch.id>, '<branchName>', '<address>', <latitude>, <longitude>);
