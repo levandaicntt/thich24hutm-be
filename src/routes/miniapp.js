@@ -9,6 +9,7 @@ const {
   insertFirstFollowLocation,
   persistUserMatch,
 } = require("../services/consent");
+const { maybePushPhoneShared } = require("../services/notify");
 const { matchUserBySnapshot } = require("../services/pharmacy");
 const { isValidCoordinate } = require("../utils/geo");
 const pool = require("../db/pool");
@@ -43,6 +44,14 @@ router.post("/phone", auth, async (req, res, next) => {
     const data = await decodePhoneToken(bearer(req), phone_token);
     const phone = data?.number || null;
     const user = await upsertUser({ zaloUserId: req.zaloUserId, phone });
+    await maybePushPhoneShared({
+      pool,
+      user_id_by_app: req.zaloUserId,
+      phone,
+      occurredAt: new Date().toISOString(),
+    }).catch((err) =>
+      console.error(`[notify] phone push failed uid=${req.zaloUserId}: ${err.message}`)
+    );
     ok(res, {
       success: true,
       phone_linked: user.phone_linked,
@@ -73,6 +82,10 @@ router.post("/consents", auth, async (req, res, next) => {
     if (location_token) {
       location = await decodeLocationToken(bearer(req), location_token);
     }
+
+    console.log(
+      `[consents] zaloUserId=${req.zaloUserId} user_id_by_app=${user_id_by_app ?? "NULL"} oa_user_id=${oa_user_id ?? "NULL"}`
+    );
 
     if (user_id_by_app && user_id_by_app !== req.zaloUserId) {
       console.warn(
