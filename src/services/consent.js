@@ -1,7 +1,7 @@
 const pool = require("../db/pool");
 
 async function upsertUser({ zaloUserId, phone, oaUserId = null }) {
-  const phoneLinked = phone != null ? true : null;
+  const phoneLinked = phone != null;
   const { rows } = await pool.query(
     `INSERT INTO miniapp_users (zalo_user_id, phone, phone_linked, oa_user_id)
      VALUES ($1, $2, $3, $4)
