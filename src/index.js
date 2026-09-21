@@ -44,7 +44,7 @@ app.get("/health", (_req, res) => ok(res, { status: "ok" }));
 
 app.use("/api/v1/miniapp", miniappRouter);
 
-app.use((err, _req, res, _next) => {
+app.use((err, _req, res) => {
   const status = err.status || 500;
   console.error(`[error] ${status} ${err.message}`, { stack: err.stack, code: err.code });
   res
