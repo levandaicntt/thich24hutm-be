@@ -28,3 +28,6 @@ certs/*.key
 certs/*.csr
 certs/*.srl
 certs/server.ext
+
+# ESLint cache
+.eslintcache
