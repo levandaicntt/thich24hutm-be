@@ -3,7 +3,7 @@ const assert = require("node:assert/strict");
 
 const { persistUserMatch } = require("../src/services/consent");
 
-test("matched=true -> UPDATE zalo_users with match columns + customer_matched", async () => {
+test("matched=true -> UPDATE miniapp_users with match columns + customer_matched", async () => {
   const calls = [];
   const pool = {
     query: async (sql, params) => {
@@ -18,7 +18,7 @@ test("matched=true -> UPDATE zalo_users with match columns + customer_matched", 
   });
   assert.equal(row.id, 1);
   const call = calls[0];
-  assert.match(call.sql, /UPDATE zalo_users/i);
+  assert.match(call.sql, /UPDATE miniapp_users/i);
   assert.match(call.sql, /matched_pharmacy_id/);
   assert.match(call.sql, /matched_at/);
   assert.match(call.sql, /match_distance_meters/);

@@ -16,7 +16,7 @@ test("upsertUser persists oa_user_id when provided", async (t) => {
   mockQuery(t, calls);
   await upsertUser({ zaloUserId: "a-1", phone: null, oaUserId: "b-1" });
   const call = calls[0];
-  assert.match(call.sql, /INSERT INTO zalo_users/);
+  assert.match(call.sql, /INSERT INTO miniapp_users/);
   assert.match(call.sql, /oa_user_id/);
   assert.deepEqual(call.params, ["a-1", null, null, "b-1"]);
 });
@@ -29,7 +29,7 @@ test("fill-only: existing oa_user_id wins (COALESCE existing first)", async (t) 
   const sql = calls[1].sql;
   assert.match(
     sql,
-    /oa_user_id\s*=\s*COALESCE\(zalo_users\.oa_user_id,\s*EXCLUDED\.oa_user_id\)/i
+    /oa_user_id\s*=\s*COALESCE\(miniapp_users\.oa_user_id,\s*EXCLUDED\.oa_user_id\)/i
   );
   assert.doesNotMatch(
     sql,

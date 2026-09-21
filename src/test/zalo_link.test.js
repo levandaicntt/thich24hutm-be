@@ -15,7 +15,7 @@ test("resolveOaUid returns oa_user_id when link found", async () => {
   const oa = await resolveOaUid({ pool, user_id_by_app: "app-user-1" });
   assert.equal(oa, "oa-user-1");
   assert.equal(traces.length, 1);
-  assert.equal(traces[0].text.includes("FROM zalo_users"), true);
+  assert.equal(traces[0].text.includes("FROM miniapp_users"), true);
   assert.equal(traces[0].text.includes("WHERE zalo_user_id = $1"), true);
   assert.deepEqual(traces[0].params, ["app-user-1"]);
 });

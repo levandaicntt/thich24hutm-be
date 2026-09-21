@@ -1,6 +1,6 @@
 BEGIN;
 
-CREATE TABLE IF NOT EXISTS zalo_users (
+CREATE TABLE IF NOT EXISTS miniapp_users (
   id               SERIAL PRIMARY KEY,
   zalo_user_id     TEXT UNIQUE NOT NULL,
   phone            TEXT,
@@ -12,7 +12,7 @@ CREATE TABLE IF NOT EXISTS zalo_users (
 
 CREATE TABLE IF NOT EXISTS zalo_user_consents (
   id            SERIAL PRIMARY KEY,
-  zalo_user_id  TEXT NOT NULL REFERENCES zalo_users(zalo_user_id),
+  zalo_user_id  TEXT NOT NULL REFERENCES miniapp_users(zalo_user_id),
   location      JSONB,
   network_type  TEXT DEFAULT 'unknown',
   oa_followed   BOOLEAN DEFAULT FALSE,
@@ -21,7 +21,7 @@ CREATE TABLE IF NOT EXISTS zalo_user_consents (
   created_at    TIMESTAMPTZ DEFAULT NOW()
 );
 
-CREATE INDEX IF NOT EXISTS idx_zalo_users_zalo_id ON zalo_users(zalo_user_id);
+CREATE INDEX IF NOT EXISTS idx_zalo_users_zalo_id ON miniapp_users(zalo_user_id);
 CREATE INDEX IF NOT EXISTS idx_consents_zalo_id ON zalo_user_consents(zalo_user_id);
 
 COMMIT;
