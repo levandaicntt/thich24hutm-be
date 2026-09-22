@@ -9,7 +9,7 @@ const {
   insertFirstFollowLocation,
   persistUserMatch,
 } = require("../services/consent");
-const { maybePushPhoneShared } = require("../services/notify");
+const { maybeIngestPhoneShared } = require("../services/utm_ingest");
 const { matchUserBySnapshot } = require("../services/pharmacy");
 const { isValidCoordinate } = require("../utils/geo");
 const pool = require("../db/pool");
@@ -44,14 +44,23 @@ router.post("/phone", auth, async (req, res, next) => {
     const data = await decodePhoneToken(bearer(req), phone_token);
     const phone = data?.number || null;
     const user = await upsertUser({ zaloUserId: req.zaloUserId, phone });
-    await maybePushPhoneShared({
+    await maybeIngestPhoneShared({
       pool,
       user_id_by_app: req.zaloUserId,
       phone,
       occurredAt: new Date().toISOString(),
-    }).catch((err) =>
-      console.error(`[notify] phone push failed uid=${req.zaloUserId}: ${err.message}`)
-    );
+    })
+      .then((res) =>
+        res?.skipped
+          ? console.log(`[utm-ingest] skipped uid=${req.zaloUserId} reason=${res.reason}`)
+          : console.log(
+              `[utm-ingest] event=${res.eventId} uid=${req.zaloUserId} ` +
+                `applied=${res.applied} duplicate=${res.duplicate} stale=${res.stale}`
+            )
+      )
+      .catch((err) =>
+        console.error(`[utm-ingest] failed uid=${req.zaloUserId}: ${err.message}`)
+      );
     ok(res, {
       success: true,
       phone_linked: user.phone_linked,

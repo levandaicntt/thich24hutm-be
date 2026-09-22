@@ -1,6 +1,6 @@
 BEGIN;
 
-ALTER TABLE zalo_users
+ALTER TABLE miniapp_users
   ADD COLUMN IF NOT EXISTS matched_pharmacy_id BIGINT NULL
     REFERENCES pharmacy_locations(id) ON DELETE SET NULL,
   ADD COLUMN IF NOT EXISTS matched_at TIMESTAMPTZ NULL,

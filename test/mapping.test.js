@@ -16,9 +16,9 @@ test("upsertUser persists oa_user_id when provided", async (t) => {
   mockQuery(t, calls);
   await upsertUser({ zaloUserId: "a-1", phone: null, oaUserId: "b-1" });
   const call = calls[0];
-  assert.match(call.sql, /INSERT INTO zalo_users/);
+  assert.match(call.sql, /INSERT INTO miniapp_users/);
   assert.match(call.sql, /oa_user_id/);
-  assert.deepEqual(call.params, ["a-1", null, null, "b-1"]);
+  assert.deepEqual(call.params, ["a-1", null, false, "b-1"]);
 });
 
 test("fill-only: existing oa_user_id wins (COALESCE existing first)", async (t) => {
@@ -29,7 +29,7 @@ test("fill-only: existing oa_user_id wins (COALESCE existing first)", async (t) 
   const sql = calls[1].sql;
   assert.match(
     sql,
-    /oa_user_id\s*=\s*COALESCE\(zalo_users\.oa_user_id,\s*EXCLUDED\.oa_user_id\)/i
+    /oa_user_id\s*=\s*COALESCE\(miniapp_users\.oa_user_id,\s*EXCLUDED\.oa_user_id\)/i
   );
   assert.doesNotMatch(
     sql,
@@ -42,7 +42,7 @@ test("omitted oa_user_id -> NULL param (NULL + NULL stays NULL)", async (t) => {
   const calls = [];
   mockQuery(t, calls);
   await upsertUser({ zaloUserId: "a-2", phone: null });
-  assert.deepEqual(calls[0].params, ["a-2", null, null, null]);
+  assert.deepEqual(calls[0].params, ["a-2", null, false, null]);
 });
 
 test("explicit null oa_user_id -> NULL param", async (t) => {
@@ -50,6 +50,15 @@ test("explicit null oa_user_id -> NULL param", async (t) => {
   mockQuery(t, calls);
   await upsertUser({ zaloUserId: "a-3", phone: null, oaUserId: null });
   assert.equal(calls[0].params[3], null);
+});
+
+test("phone_linked is FALSE (never NULL) when phone is absent", async (t) => {
+  const calls = [];
+  mockQuery(t, calls);
+  await upsertUser({ zaloUserId: "a-5", phone: null });
+  const call = calls[0];
+  assert.equal(call.params[2], false);
+  assert.notEqual(call.params[2], null);
 });
 
 test("legacy call with only zaloUserId still succeeds (backward compat)", async (t) => {

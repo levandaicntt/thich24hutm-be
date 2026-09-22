@@ -1,39 +1,20 @@
 services:
-  db:
-    image: postgres:16-alpine
-    container_name: thich24hutm-db
-    restart: unless-stopped
-    environment:
-      POSTGRES_USER: thich24h
-      POSTGRES_PASSWORD: thich24h_secret
-      POSTGRES_DB: thich24hutm
-    volumes:
-      - pgdata:/var/lib/postgresql/data
-    ports:
-      - "127.0.0.1:5440:5432"
-      - "[::1]:5440:5432"
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U thich24h -d thich24hutm"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-      start_period: 10s
-
   backend:
     build: .
     image: thich24hutm-be:local
     container_name: thich24hutm-be
     restart: unless-stopped
-    depends_on:
-      db:
-        condition: service_healthy
     environment:
       PORT: "3001"
-      DATABASE_URL: postgresql://thich24h:thich24h_secret@db:5432/thich24hutm
+      # Phase 2: the single shared database (thich24h_notify). Schema is owned
+      # by thich24h_notify's Alembic; never run BE migrations against it.
+      DATABASE_URL: postgresql://thich24h:thich24h@host.docker.internal:5432/thich24h_notify
       ZALO_APP_ID: ${ZALO_APP_ID:?set ZALO_APP_ID in .env}
       ZALO_APP_SECRET: ${ZALO_APP_SECRET:?set ZALO_APP_SECRET in .env}
       CORS_ORIGIN: ${CORS_ORIGIN:-}
       MAX_STORE_DISTANCE_METERS: ${MAX_STORE_DISTANCE_METERS:-50}
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     ports:
       - "3001:3001"
     healthcheck:
@@ -67,9 +48,6 @@ services:
     environment:
       NGROK_AUTHTOKEN: ${NGROK_AUTHTOKEN:?set NGROK_AUTHTOKEN}
     command: http http://proxy:8080 --url=exemption-mountain-repossess.ngrok-free.dev
-
-volumes:
-  pgdata:
 
 networks:
   thich24h_edge:

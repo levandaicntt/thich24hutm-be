@@ -1,15 +1,15 @@
 const pool = require("../db/pool");
 
 async function upsertUser({ zaloUserId, phone, oaUserId = null }) {
-  const phoneLinked = phone != null ? true : null;
+  const phoneLinked = phone != null;
   const { rows } = await pool.query(
-    `INSERT INTO zalo_users (zalo_user_id, phone, phone_linked, oa_user_id)
+    `INSERT INTO miniapp_users (zalo_user_id, phone, phone_linked, oa_user_id)
      VALUES ($1, $2, $3, $4)
      ON CONFLICT (zalo_user_id)
      DO UPDATE SET
-       phone        = COALESCE(EXCLUDED.phone, zalo_users.phone),
-       phone_linked = COALESCE(EXCLUDED.phone_linked, zalo_users.phone_linked),
-       oa_user_id   = COALESCE(zalo_users.oa_user_id, EXCLUDED.oa_user_id),
+       phone        = COALESCE(EXCLUDED.phone, miniapp_users.phone),
+       phone_linked = COALESCE(EXCLUDED.phone_linked, miniapp_users.phone_linked),
+       oa_user_id   = COALESCE(miniapp_users.oa_user_id, EXCLUDED.oa_user_id),
        updated_at   = NOW()
      RETURNING *`,
     [zaloUserId, phone ?? null, phoneLinked, oaUserId ?? null]
@@ -86,7 +86,7 @@ async function persistUserMatch({ pool, zaloUserId, match }) {
     return null;
   }
   const { rows } = await pool.query(
-    `UPDATE zalo_users
+    `UPDATE miniapp_users
      SET matched_pharmacy_id = $2,
          matched_at          = NOW(),
          match_distance_meters = $3,
