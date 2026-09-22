@@ -1,21 +1,18 @@
-const express = require("express");
-const cors = require("cors");
-const helmet = require("helmet");
-const rateLimit = require("express-rate-limit");
+const express = require('express');
+const cors = require('cors');
+const helmet = require('helmet');
+const rateLimit = require('express-rate-limit');
 
-const env = require("./config/env");
-const { ok } = require("./utils/response");
-const miniappRouter = require("./routes/miniapp");
+const env = require('./config/env');
+const { ok } = require('./utils/response');
+const miniappRouter = require('./routes/miniapp');
 
 const app = express();
 
 app.use(helmet());
 app.use(
   cors({
-    origin: env.CORS_ORIGIN || [
-      "https://h5.zdn.vn",
-      "zbrowser://h5.zdn.vn",
-    ],
+    origin: env.CORS_ORIGIN || ['https://h5.zdn.vn', 'zbrowser://h5.zdn.vn'],
   })
 );
 app.use(express.json());
@@ -40,16 +37,16 @@ const limiter = rateLimit({
 });
 app.use(limiter);
 
-app.get("/health", (_req, res) => ok(res, { status: "ok" }));
+app.get('/health', (_req, res) => ok(res, { status: 'ok' }));
 
-app.use("/api/v1/miniapp", miniappRouter);
+app.use('/api/v1/miniapp', miniappRouter);
 
 app.use((err, _req, res) => {
   const status = err.status || 500;
   console.error(`[error] ${status} ${err.message}`, { stack: err.stack, code: err.code });
   res
     .status(status)
-    .json({ error: -1, message: err.message || "Internal Server Error", data: null });
+    .json({ error: -1, message: err.message || 'Internal Server Error', data: null });
 });
 
 app.listen(env.PORT, () => {

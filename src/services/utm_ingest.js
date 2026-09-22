@@ -1,21 +1,21 @@
-const crypto = require("crypto");
-const { toCanonicalPhone } = require("../utils/phone");
-const { resolveOaUid } = require("./zalo_link");
+const crypto = require('crypto');
+const { toCanonicalPhone } = require('../utils/phone');
+const { resolveOaUid } = require('./zalo_link');
 
-const UTM_SOURCE = "utm_mini_app";
+const UTM_SOURCE = 'utm_mini_app';
 
 function toIsoUtcSeconds(occurredAt) {
   const date = new Date(occurredAt);
   if (Number.isNaN(date.getTime())) {
     throw new Error(`invalid occurred_at: ${occurredAt}`);
   }
-  return date.toISOString().slice(0, 19) + "+00:00";
+  return date.toISOString().slice(0, 19) + '+00:00';
 }
 
 function deriveUtmEventId({ uid, phone, occurredAt, source = UTM_SOURCE }) {
   const canonical = toCanonicalPhone(phone);
-  const payload = [uid, canonical || "", toIsoUtcSeconds(occurredAt), source].join("|");
-  return crypto.createHash("sha256").update(payload).digest("hex");
+  const payload = [uid, canonical || '', toIsoUtcSeconds(occurredAt), source].join('|');
+  return crypto.createHash('sha256').update(payload).digest('hex');
 }
 
 async function ingestUtmEvent({ pool, uid, phone, occurredAt, source = UTM_SOURCE }) {
@@ -24,7 +24,7 @@ async function ingestUtmEvent({ pool, uid, phone, occurredAt, source = UTM_SOURC
   const eventId = deriveUtmEventId({ uid, phone: canonical, occurredAt: occurred, source });
   const client = await pool.connect();
   try {
-    await client.query("BEGIN");
+    await client.query('BEGIN');
 
     const dup = await client.query(
       `SELECT event_id, applied, customer_id
@@ -34,7 +34,7 @@ async function ingestUtmEvent({ pool, uid, phone, occurredAt, source = UTM_SOURC
     );
     if (dup.rows.length > 0) {
       const row = dup.rows[0];
-      await client.query("COMMIT");
+      await client.query('COMMIT');
       return {
         eventId,
         duplicate: true,
@@ -59,11 +59,11 @@ async function ingestUtmEvent({ pool, uid, phone, occurredAt, source = UTM_SOURC
          VALUES ($1, $2, $3, $4, $5, NULL, FALSE)`,
         [eventId, uid, canonical, source, occurred]
       );
-      await client.query("COMMIT");
+      await client.query('COMMIT');
       return { eventId, duplicate: false, stale: true, applied: false, matched: false };
     }
 
-await client.query(
+    await client.query(
       `INSERT INTO zalo_users (zalo_oa_user_id, status, is_follow, phone)
        VALUES ($1, 'active', FALSE, $2)
        ON CONFLICT (zalo_oa_user_id)
@@ -79,30 +79,42 @@ await client.query(
       [eventId, uid, canonical, source, occurred]
     );
 
-    await client.query("COMMIT");
+    await client.query('COMMIT');
     return { eventId, duplicate: false, stale: false, applied: true, matched: false };
   } catch (err) {
-    await client.query("ROLLBACK").catch(() => {});
+    await client.query('ROLLBACK').catch(() => {});
     throw err;
   } finally {
     client.release();
   }
 }
 
-async function maybeIngestPhoneShared({ pool, user_id_by_app, phone, occurredAt, source = UTM_SOURCE }) {
+async function maybeIngestPhoneShared({
+  pool,
+  user_id_by_app,
+  phone,
+  occurredAt,
+  source = UTM_SOURCE,
+}) {
   if (!phone) {
-    return { skipped: true, reason: "phone-missing" };
+    return { skipped: true, reason: 'phone-missing' };
   }
   const canonical = toCanonicalPhone(phone);
   if (!canonical) {
-    return { skipped: true, reason: "phone-invalid" };
+    return { skipped: true, reason: 'phone-invalid' };
   }
   const oaUserId = await resolveOaUid({ pool, user_id_by_app });
   if (!oaUserId) {
     console.log(`[utm-ingest] skipped no-oa-link app=${user_id_by_app}`);
-    return { skipped: true, reason: "no-oa-link" };
+    return { skipped: true, reason: 'no-oa-link' };
   }
   return ingestUtmEvent({ pool, uid: oaUserId, phone: canonical, occurredAt, source });
 }
 
-module.exports = { ingestUtmEvent, maybeIngestPhoneShared, deriveUtmEventId, toIsoUtcSeconds, UTM_SOURCE };
+module.exports = {
+  ingestUtmEvent,
+  maybeIngestPhoneShared,
+  deriveUtmEventId,
+  toIsoUtcSeconds,
+  UTM_SOURCE,
+};

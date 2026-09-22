@@ -1,9 +1,12 @@
-const { test } = require("node:test");
-const assert = require("node:assert/strict");
+const { test } = require('node:test');
+const assert = require('node:assert/strict');
 
-const { DEFAULT_MAX_STORE_DISTANCE_METERS, getMaxStoreDistanceMeters } = require("../src/config/distance");
+const {
+  DEFAULT_MAX_STORE_DISTANCE_METERS,
+  getMaxStoreDistanceMeters,
+} = require('../src/config/distance');
 
-test("default threshold is 50", () => {
+test('default threshold is 50', () => {
   const prev = process.env.MAX_STORE_DISTANCE_METERS;
   delete process.env.MAX_STORE_DISTANCE_METERS;
   try {
@@ -14,9 +17,9 @@ test("default threshold is 50", () => {
   }
 });
 
-test("environment variable overrides default", () => {
+test('environment variable overrides default', () => {
   const prev = process.env.MAX_STORE_DISTANCE_METERS;
-  process.env.MAX_STORE_DISTANCE_METERS = "200";
+  process.env.MAX_STORE_DISTANCE_METERS = '200';
   try {
     assert.equal(getMaxStoreDistanceMeters(), 200);
   } finally {
@@ -25,9 +28,9 @@ test("environment variable overrides default", () => {
   }
 });
 
-test("non-numeric value falls back to default", () => {
+test('non-numeric value falls back to default', () => {
   const prev = process.env.MAX_STORE_DISTANCE_METERS;
-  process.env.MAX_STORE_DISTANCE_METERS = "abc";
+  process.env.MAX_STORE_DISTANCE_METERS = 'abc';
   try {
     assert.equal(getMaxStoreDistanceMeters(), 50);
   } finally {
@@ -36,9 +39,9 @@ test("non-numeric value falls back to default", () => {
   }
 });
 
-test("negative value falls back to default", () => {
+test('negative value falls back to default', () => {
   const prev = process.env.MAX_STORE_DISTANCE_METERS;
-  process.env.MAX_STORE_DISTANCE_METERS = "-5";
+  process.env.MAX_STORE_DISTANCE_METERS = '-5';
   try {
     assert.equal(getMaxStoreDistanceMeters(), 50);
   } finally {

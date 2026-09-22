@@ -23,14 +23,14 @@ npm run dev            # start server (port 3001)
 
 ## Env vars
 
-| Var | Bắt buộc | Mô tả |
-| --- | --- | --- |
-| `DATABASE_URL` | yes | PostgreSQL connection string tới shared DB `thich24h_notify` |
-| `ZALO_APP_ID` | yes | Zalo Mini App ID |
-| `ZALO_APP_SECRET` | yes | Zalo App Secret (chỉ dùng ở backend) |
-| `CORS_ORIGIN` | no | FE origin được phép |
-| `MAX_STORE_DISTANCE_METERS` | no | ngưỡng match nhà thuốc gần nhất (mét), default 50 |
-| `PORT` | no | default 3001 |
+| Var                         | Bắt buộc | Mô tả                                                        |
+| --------------------------- | -------- | ------------------------------------------------------------ |
+| `DATABASE_URL`              | yes      | PostgreSQL connection string tới shared DB `thich24h_notify` |
+| `ZALO_APP_ID`               | yes      | Zalo Mini App ID                                             |
+| `ZALO_APP_SECRET`           | yes      | Zalo App Secret (chỉ dùng ở backend)                         |
+| `CORS_ORIGIN`               | no       | FE origin được phép                                          |
+| `MAX_STORE_DISTANCE_METERS` | no       | ngưỡng match nhà thuốc gần nhất (mét), default 50            |
+| `PORT`                      | no       | default 3001                                                 |
 
 ## API
 

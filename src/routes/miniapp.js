@@ -1,18 +1,18 @@
-const { z } = require("zod");
-const { Router } = require("express");
-const auth = require("../middleware/auth");
-const { ok, fail } = require("../utils/response");
-const { decodePhoneToken, decodeLocationToken } = require("../services/zalo");
+const { z } = require('zod');
+const { Router } = require('express');
+const auth = require('../middleware/auth');
+const { ok, fail } = require('../utils/response');
+const { decodePhoneToken, decodeLocationToken } = require('../services/zalo');
 const {
   upsertUser,
   insertConsent,
   insertFirstFollowLocation,
   persistUserMatch,
-} = require("../services/consent");
-const { maybeIngestPhoneShared } = require("../services/utm_ingest");
-const { matchUserBySnapshot } = require("../services/pharmacy");
-const { isValidCoordinate } = require("../utils/geo");
-const pool = require("../db/pool");
+} = require('../services/consent');
+const { maybeIngestPhoneShared } = require('../services/utm_ingest');
+const { matchUserBySnapshot } = require('../services/pharmacy');
+const { isValidCoordinate } = require('../utils/geo');
+const pool = require('../db/pool');
 
 const router = Router();
 
@@ -31,14 +31,14 @@ const consentsBody = z.object({
 });
 
 function bearer(req) {
-  return req.headers.authorization.replace(/^Bearer\s+/i, "");
+  return req.headers.authorization.replace(/^Bearer\s+/i, '');
 }
 
-router.post("/phone", auth, async (req, res, next) => {
+router.post('/phone', auth, async (req, res, next) => {
   try {
     const parsed = phoneBody.safeParse(req.body);
     if (!parsed.success) {
-      return fail(res, 400, parsed.error.issues[0]?.message || "Invalid body");
+      return fail(res, 400, parsed.error.issues[0]?.message || 'Invalid body');
     }
     const { phone_token } = parsed.data;
     const data = await decodePhoneToken(bearer(req), phone_token);
@@ -58,9 +58,7 @@ router.post("/phone", auth, async (req, res, next) => {
                 `applied=${res.applied} duplicate=${res.duplicate} stale=${res.stale}`
             )
       )
-      .catch((err) =>
-        console.error(`[utm-ingest] failed uid=${req.zaloUserId}: ${err.message}`)
-      );
+      .catch((err) => console.error(`[utm-ingest] failed uid=${req.zaloUserId}: ${err.message}`));
     ok(res, {
       success: true,
       phone_linked: user.phone_linked,
@@ -71,11 +69,11 @@ router.post("/phone", auth, async (req, res, next) => {
   }
 });
 
-router.post("/consents", auth, async (req, res, next) => {
+router.post('/consents', auth, async (req, res, next) => {
   try {
     const parsed = consentsBody.safeParse(req.body);
     if (!parsed.success) {
-      return fail(res, 400, parsed.error.issues[0]?.message || "Invalid body");
+      return fail(res, 400, parsed.error.issues[0]?.message || 'Invalid body');
     }
     const {
       location_token,
@@ -93,7 +91,7 @@ router.post("/consents", auth, async (req, res, next) => {
     }
 
     console.log(
-      `[consents] zaloUserId=${req.zaloUserId} user_id_by_app=${user_id_by_app ?? "NULL"} oa_user_id=${oa_user_id ?? "NULL"}`
+      `[consents] zaloUserId=${req.zaloUserId} user_id_by_app=${user_id_by_app ?? 'NULL'} oa_user_id=${oa_user_id ?? 'NULL'}`
     );
 
     if (user_id_by_app && user_id_by_app !== req.zaloUserId) {
@@ -134,7 +132,7 @@ router.post("/consents", auth, async (req, res, next) => {
   }
 });
 
-router.post("/location/match", auth, async (req, res, next) => {
+router.post('/location/match', auth, async (req, res, next) => {
   try {
     const data = await matchUserBySnapshot(pool, { zaloUserId: req.zaloUserId });
     if (data.matched) {

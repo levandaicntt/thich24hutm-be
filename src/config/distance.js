@@ -2,7 +2,7 @@ const DEFAULT_MAX_STORE_DISTANCE_METERS = 50;
 
 function getMaxStoreDistanceMeters() {
   const raw = process.env.MAX_STORE_DISTANCE_METERS;
-  if (raw === undefined || raw === null || raw.trim() === "") {
+  if (raw === undefined || raw === null || raw.trim() === '') {
     return DEFAULT_MAX_STORE_DISTANCE_METERS;
   }
   const value = Number(raw);

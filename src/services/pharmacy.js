@@ -1,5 +1,5 @@
-const { haversineMeters, isValidCoordinate } = require("../utils/geo");
-const { getMaxStoreDistanceMeters } = require("../config/distance");
+const { haversineMeters, isValidCoordinate } = require('../utils/geo');
+const { getMaxStoreDistanceMeters } = require('../config/distance');
 
 function roundMeters(value) {
   return Math.round(value * 10) / 10;
@@ -48,9 +48,7 @@ function resolveMatch(nearest, accuracy, maxDistanceMeters) {
 
   const distance = nearest.distance_meters;
   const accuracyExceeds =
-    typeof accuracy === "number" &&
-    Number.isFinite(accuracy) &&
-    accuracy > maxDistanceMeters;
+    typeof accuracy === 'number' && Number.isFinite(accuracy) && accuracy > maxDistanceMeters;
 
   if (accuracyExceeds) {
     return {

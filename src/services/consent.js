@@ -1,4 +1,4 @@
-const pool = require("../db/pool");
+const pool = require('../db/pool');
 
 async function upsertUser({ zaloUserId, phone, oaUserId = null }) {
   const phoneLinked = phone != null;
@@ -26,17 +26,12 @@ async function insertConsent({
   consentedAt,
 }) {
   const oaFollowedValue =
-    oaFollowed === undefined || oaFollowed === null
-      ? null
-      : Boolean(oaFollowed);
+    oaFollowed === undefined || oaFollowed === null ? null : Boolean(oaFollowed);
 
-  const networkTypeValue =
-    networkType === undefined || networkType === null ? null : networkType;
+  const networkTypeValue = networkType === undefined || networkType === null ? null : networkType;
 
   const deviceInfoValue =
-    deviceInfo === undefined || deviceInfo === null
-      ? null
-      : JSON.stringify(deviceInfo);
+    deviceInfo === undefined || deviceInfo === null ? null : JSON.stringify(deviceInfo);
 
   const { rows } = await pool.query(
     `INSERT INTO zalo_user_consents

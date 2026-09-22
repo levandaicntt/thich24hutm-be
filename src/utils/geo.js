@@ -4,8 +4,8 @@ function radians(degrees) {
 
 function isValidCoordinate(lat, lng) {
   return (
-    typeof lat === "number" &&
-    typeof lng === "number" &&
+    typeof lat === 'number' &&
+    typeof lng === 'number' &&
     Number.isFinite(lat) &&
     Number.isFinite(lng) &&
     lat >= -90 &&
