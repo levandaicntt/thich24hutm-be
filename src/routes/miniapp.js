@@ -115,7 +115,7 @@ router.post('/consents', auth, async (req, res, next) => {
       consentedAt: consented_at,
     });
     if (oa_followed === true && user?.oa_user_id) {
-      await markOaFollowed({ pool, oaUserId: user.oa_user_id });
+      await markOaFollowed({ pool, oaUserId: user.oa_user_id, consentedAt: consented_at });
     }
     if (oa_followed === true && location) {
       const { latitude, longitude, accuracy } = location;

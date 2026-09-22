@@ -76,17 +76,23 @@ async function insertFirstFollowLocation({
   return rows[0] ?? null;
 }
 
-async function markOaFollowed({ pool, oaUserId }) {
+async function markOaFollowed({ pool, oaUserId, consentedAt }) {
   if (!oaUserId) {
     return null;
   }
   const { rows } = await pool.query(
-    `INSERT INTO zalo_users (zalo_oa_user_id, status, is_follow, phone)
-     VALUES ($1, 'active', TRUE, NULL)
+    `INSERT INTO zalo_users (zalo_oa_user_id, status, is_follow, phone, followed_at)
+     VALUES ($1, 'active', TRUE, NULL, $2)
      ON CONFLICT (zalo_oa_user_id)
-     DO UPDATE SET is_follow = TRUE, updated_at = NOW()
+     DO UPDATE SET
+       is_follow   = TRUE,
+       followed_at = CASE
+         WHEN zalo_users.is_follow IS FALSE THEN EXCLUDED.followed_at
+         ELSE zalo_users.followed_at
+       END,
+       updated_at  = NOW()
      RETURNING id`,
-    [oaUserId]
+    [oaUserId, consentedAt]
   );
   return rows[0] ?? null;
 }
