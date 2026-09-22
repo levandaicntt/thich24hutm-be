@@ -7,6 +7,7 @@ const {
   upsertUser,
   insertConsent,
   insertFirstFollowLocation,
+  markOaFollowed,
   persistUserMatch,
 } = require('../services/consent');
 const { maybeIngestPhoneShared } = require('../services/utm_ingest');
@@ -100,7 +101,7 @@ router.post('/consents', auth, async (req, res, next) => {
       );
     }
 
-    await upsertUser({
+    const user = await upsertUser({
       zaloUserId: req.zaloUserId,
       phone: null,
       oaUserId: oa_user_id || null,
@@ -113,6 +114,9 @@ router.post('/consents', auth, async (req, res, next) => {
       deviceInfo: device_info,
       consentedAt: consented_at,
     });
+    if (oa_followed === true && user?.oa_user_id) {
+      await markOaFollowed({ pool, oaUserId: user.oa_user_id });
+    }
     if (oa_followed === true && location) {
       const { latitude, longitude, accuracy } = location;
       if (isValidCoordinate(latitude, longitude)) {

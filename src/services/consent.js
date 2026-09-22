@@ -76,6 +76,21 @@ async function insertFirstFollowLocation({
   return rows[0] ?? null;
 }
 
+async function markOaFollowed({ pool, oaUserId }) {
+  if (!oaUserId) {
+    return null;
+  }
+  const { rows } = await pool.query(
+    `INSERT INTO zalo_users (zalo_oa_user_id, status, is_follow, phone)
+     VALUES ($1, 'active', TRUE, NULL)
+     ON CONFLICT (zalo_oa_user_id)
+     DO UPDATE SET is_follow = TRUE, updated_at = NOW()
+     RETURNING id`,
+    [oaUserId]
+  );
+  return rows[0] ?? null;
+}
+
 async function persistUserMatch({ pool, zaloUserId, match }) {
   if (!match || match.matched !== true) {
     return null;
@@ -98,5 +113,6 @@ module.exports = {
   upsertUser,
   insertConsent,
   insertFirstFollowLocation,
+  markOaFollowed,
   persistUserMatch,
 };
